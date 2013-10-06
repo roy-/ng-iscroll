@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+      <meta name="format-detection" content="telephone=no" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"/>
+
+    <title>ngIscroll demo</title>
+
+    <link href="demo.css" rel="stylesheet">
+
+    <script type="text/javascript" src='../../../vendor/angular-1.2.0-rc.2/angular.js'></script>
+    <script type="text/javascript" src='../../../vendor/iscroll-4/src/iscroll.js'></script>
+    <script type="text/javascript" src='../dist/ng-iscroll.js'></script>
+
+  </head>
+  <body ng-app="app" ng-controller="AppCtrl">
+
+  <div class="viewport">
+      <div class="header">
+          <span>iscroll test</span>
+      </div>
+      <div class="container" ng-iscroll>
+          <div class="content">
+              <div ng-iscroll-pull="{statusID: 'pullStatus', onLoad: onRefresh}" class="pull pullDown">
+                  <span class="pullIcon pullDown" ng-class="{flip:pullStatus=='flip',loading:pullStatus=='loading'}"></span>
+                  <span ng-init="pullStatus='loading'; pullText={idle:'下拉可以刷新...', flip:'松开即可刷新...', loading:'加载中...'}">{{pullText[pullStatus]}}</span>
+              </div>
+              <ul>
+                  <li ng-repeat="item in items">{{item}}</li>
+              </ul>
+              <div ng-iscroll-more="{statusID: 'moreStatus', onLoad: onMore}" class="pull pullUp">
+                  <span class="pullIcon pullUp" ng-class="{loading:moreStatus=='loading'}"></span>
+                  <span ng-bind="moreText[moreStatus]" ng-init="moreText={idle:'加载更多...',loading:'加载中...'};moreStatus='init'"></span>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <script>
+      console.log(new Date());
+      angular.module( 'app', ['ngIscroll'])
+      .controller('AppCtrl', function($scope, $timeout){
+        var item = "row";
+        items = []
+        for(var i=0; i<20; i++){
+          items.push(item+i);
+        }
+
+        $scope.onRefresh = function(cb){
+            console.log("onRefersh");
+
+            $timeout(function(){
+
+                if (!$scope.items){
+                    $scope.items = items
+                    length = items.length
+                }
+                else{
+                    items.unshift("refresh item");
+                    length = 1
+                }
+                cb(length);
+
+            }, 2000);
+        }
+        $scope.onMore = function(cb){
+
+            console.log("onMore");
+            $timeout(function(){
+                items.push("more item");
+                cb(1);
+            }, 2000);
+        }
+      });
+
+  </script>
+  </body>
+</html>
