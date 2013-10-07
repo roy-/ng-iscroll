@@ -1,6 +1,6 @@
 
 angular.module( 'ngIscroll', [])
-  .directive('ngIscroll', ()->
+  .directive('ngIscroll', ($timeout)->
 
     controller: ()->
       handlers = []
@@ -11,53 +11,52 @@ angular.module( 'ngIscroll', [])
 
     link: (scope, el, attr, ctrl)->
 
-      offset = 0
-      setStatus = angular.noop
-
-      scroll = new iScroll el[0],
-        onScrollMove: ->
-          if this.y > 5 and status isnt 'flip'
-            setStatus('flip', yes)
-            this.minScrollY = 0
-          else if status is 'flip' and this.y < 5
-            setStatus('idle', yes)
-            this.minScrollY = -offset
-
-        onScrollEnd: ->
-          if status is 'flip'
-            setStatus('loading', yes)
-
-      #window
-      window.scroll = scroll
-
+      scroll = scope.$iscroll = new iScroll el[0]
       ctrl.onRefresh ->
-        if scroll.options.topOffset?
-          scroll.options.topOffset = offset
-        setTimeout (->scroll.refresh()),10
-
-      if ctrl.pullOptions
-
-        status = null
-        {statusID, onLoad, offset} = ctrl.pullOptions
-        angular.isFunction(onLoad) or onLoad = angular.noop
-
-        setStatus = (value, apply)->
-          scope[statusID] = value
-          scope.$apply() if apply
-
-        scope.$watch statusID, (value)->
-          status = value
-          if value is 'loading'
-            onLoad (ret)->
-              setStatus 'idle'
-              if ret > 0 then ctrl.refresh()
-
+        setTimeout (->scroll.refresh()),100
   )
   .directive('ngIscrollPull', ()->
+
     require: '^ngIscroll'
     link: (scope, el, attr, ctrl)->
-      ctrl.pullOptions = scope.$eval(attr.ngIscrollPull, scope)
-      ctrl.pullOptions.offset = el[0].offsetHeight
+
+      status = null
+      {statusID, onLoad} = scope.$eval(attr.ngIscrollPull)
+      offset = el[0].offsetHeight
+
+      setStatus = (value, apply)->
+        scope[statusID] = value
+        scope.$apply() if apply
+
+      scope.$watch statusID, (value)->
+        status = value
+        if value is 'loading'
+          onLoad (ret)->
+            setStatus 'idle'
+            ctrl.refresh()
+
+      options = null
+      ctrl.onRefresh ->
+        if options and options.topOffset?
+          options.topOffset = offset
+
+      scope.$watch '$iscroll', (scroll)->
+        if scroll
+          options = scroll.options
+          angular.extend options,
+
+            onScrollMove: ->
+              if this.y > 5 and status isnt 'flip'
+                setStatus('flip', yes)
+                this.minScrollY = 0
+              else if status is 'flip' and this.y < 5
+                setStatus('idle', yes)
+                this.minScrollY = -offset
+
+            onScrollEnd: ->
+              if status is 'flip'
+                setStatus('loading', yes)
+
   )
   .directive('ngIscrollMore', ()->
 
@@ -65,11 +64,11 @@ angular.module( 'ngIscroll', [])
     link: (scope, el, attr, ctrl)->
 
       status = null
-      {statusID, onLoad} = scope.$eval(attr.ngIscrollMore, scope)
+      {statusID, onLoad} = scope.$eval(attr.ngIscrollMore)
 
-      setStatus = (value)->
+      setStatus = (value, apply)->
         scope[statusID] = value
-        scope.$apply()
+        scope.$apply() if apply
 
       scope.$watch statusID, (value)->
         status = value
@@ -80,8 +79,8 @@ angular.module( 'ngIscroll', [])
 
       el.on 'click', ->
         if status is 'idle'
-          setStatus 'loading'
+          setStatus 'loading', yes
           onLoad (ret)->
             setStatus 'idle'
-            if ret > 0 then ctrl.refresh()
+            ctrl.refresh()
   )
