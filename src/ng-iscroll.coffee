@@ -35,18 +35,14 @@ angular.module( 'ngIscroll', [])
             setStatus 'idle'
             ctrl.refresh()
 
-      options = null
-      ctrl.onRefresh ->
-        if options and options.topOffset?
-          options.topOffset = offset
-
       scope.$watch '$iscroll', (scroll)->
         if scroll
-          options = scroll.options
-          angular.extend options,
+          angular.extend scroll.options,
+
+            topOffset: offset
 
             onScrollMove: ->
-              if this.y > 5 and status isnt 'flip'
+              if this.y > 5 and status is 'idle'
                 setStatus('flip', yes)
                 this.minScrollY = 0
               else if status is 'flip' and this.y < 5
